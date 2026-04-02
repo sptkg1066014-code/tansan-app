@@ -640,7 +640,7 @@ function saveBarikanSettings() {
 
 // ========== 初期化 ==========
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
 }
 renderTansan();
 renderBarikan();

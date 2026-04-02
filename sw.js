@@ -1,5 +1,5 @@
 const CACHE_NAME = 'tansan-app-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const ASSETS = ['/tansan-app/', '/tansan-app/index.html', '/tansan-app/manifest.json', '/tansan-app/sw.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
