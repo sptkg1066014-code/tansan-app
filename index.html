@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="コスト管理">
+<link rel="manifest" href="manifest.json">
+<title>炭酸水＆バリカン管理</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f4f8;
+    color: #1e293b;
+    min-height: 100vh;
+  }
+  header {
+    background: #2563eb;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .tabs {
+    display: flex;
+    background: #1d4ed8;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    font-size: 15px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    color: white;
+    border-bottom-color: #fbbf24;
+    font-weight: bold;
+  }
+  .page { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* カード */
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .card-title {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* サマリー */
+  .summary-big {
+    font-size: 36px;
+    font-weight: bold;
+    color: #2563eb;
+    line-height: 1;
+  }
+  .summary-unit { font-size: 16px; color: #64748b; margin-left: 4px; }
+  .summary-compare {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .summary-compare.win { background: #dcfce7; color: #15803d; }
+  .summary-compare.lose { background: #fee2e2; color: #dc2626; }
+  .summary-sub {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  /* 現在のカートリッジ */
+  .current-label {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .counter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+  }
+  .counter-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.1s;
+  }
+  .counter-btn:active { transform: scale(0.9); }
+  .btn-plus { background: #2563eb; color: white; }
+  .btn-minus { background: #e2e8f0; color: #475569; }
+  .counter-val {
+    font-size: 28px;
+    font-weight: bold;
+    min-width: 60px;
+    text-align: center;
+  }
+  .counter-info { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+  /* 新カートリッジ追加フォーム */
+  .form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .form-row label { font-size: 13px; color: #64748b; min-width: 80px; }
+  input[type="number"] {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #1e293b;
+    -webkit-appearance: none;
+  }
+  input[type="number"]:focus { outline: none; border-color: #2563eb; }
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn-primary { background: #2563eb; color: white; }
+  .btn-danger { background: #fee2e2; color: #dc2626; font-size: 13px; padding: 8px; margin-top: 6px; }
+  .btn-complete { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; margin-top: 8px; }
+
+  /* 履歴テーブル */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    padding: 6px 4px;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+  }
+  td {
+    padding: 8px 4px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  .current-row { background: #eff6ff; }
+  .del-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+  }
+  .del-btn:active { color: #dc2626; }
+
+  /* 設定 */
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 8px;
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 14px; flex: 1; }
+  .setting-input {
+    width: 100px;
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: right;
+  }
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #cbd5e1;
+    border-radius: 13px;
+    transition: 0.3s;
+    cursor: pointer;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 3px;
+    top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+  }
+  input:checked + .toggle-slider { background: #2563eb; }
+  input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+  /* バリカン */
+  .barikan-big {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .stat-box {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-box .val { font-size: 22px; font-weight: bold; color: #1e293b; }
+  .stat-box .lbl { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .use-btn {
+    width: 100%;
+    padding: 18px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .use-btn:active { transform: scale(0.97); }
+
+  .section-sep { height: 1px; background: #f1f5f9; margin: 12px 0; }
+</style>
+</head>
+<body>
+
+<header>💧 炭酸水＆バリカン管理</header>
+<div class="tabs">
+  <div class="tab active" onclick="showTab('tansan')">💧 炭酸水</div>
+  <div class="tab" onclick="showTab('barikan')">✂️ バリカン</div>
+</div>
+
+<!-- 炭酸水ページ -->
+<div id="page-tansan" class="page active">
+
+  <!-- サマリー -->
+  <div class="card" id="summary-card">
+    <div class="card-title">累計コスト</div>
+    <div>
+      <span class="summary-big" id="cost-per-liter">--</span>
+      <span class="summary-unit">円/L</span>
+    </div>
+    <div class="summary-compare" id="compare-box">計算中...</div>
+    <div class="summary-sub" id="summary-sub"></div>
+  </div>
+
+  <!-- 現在のカートリッジ -->
+  <div class="card">
+    <div class="card-title">現在のカートリッジ</div>
+    <div class="current-label" id="current-label">第 — 本目</div>
+    <div class="counter-row">
+      <button class="counter-btn btn-minus" onclick="changeUses(-1)">−</button>
+      <div>
+        <div class="counter-val" id="uses-display">0</div>
+        <div class="counter-info">回使用</div>
+      </div>
+      <button class="counter-btn btn-plus" onclick="changeUses(1)">＋</button>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:bold;color:#2563eb" id="current-liters">0 L</div>
+        <div class="counter-info">今回の使用量</div>
+      </div>
+    </div>
+    <button class="btn btn-complete" onclick="completeCartridge()">✅ このカートリッジを完了にする</button>
+  </div>
+
+  <!-- 新しいカートリッジ追加 -->
+  <div class="card">
+    <div class="card-title">新しいカートリッジを開始</div>
+    <div class="form-row">
+      <label>購入金額</label>
+      <input type="number" id="new-price" placeholder="3364" inputmode="numeric">
+      <span style="font-size:13px;color:#64748b">円</span>
+    </div>
+    <button class="btn btn-primary" onclick="addCartridge()">＋ 新しいカートリッジを追加</button>
+  </div>
+
+  <!-- カートリッジ履歴 -->
+  <div class="card">
+    <div class="card-title">カートリッジ履歴</div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>金額</th>
+          <th>使用量</th>
+          <th>円/L</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+  </div>
+
+  <!-- 設定 -->
+  <div class="card">
+    <div class="card-title">設定</div>
+    <div class="setting-row">
+      <span class="setting-label">本体価格 (円)</span>
+      <input type="number" class="setting-input" id="machine-price" inputmode="numeric" onchange="saveMachinePrice()">
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">本体価格を含める</span>
+      <label class="toggle">
+        <input type="checkbox" id="include-machine" onchange="saveSettings()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">ペットボトル価格 (円/500ml)</span>
+      <input type="number" class="setting-input" id="bottle-price" inputmode="numeric" onchange="saveSettings()">
+    </div>
+  </div>
+</div>
+
+<!-- バリカンページ -->
+<div id="page-barikan" class="page">
+
+  <div class="card">
+    <div class="card-title">コスト状況</div>
+    <div class="barikan-big">
+      <div class="stat-box">
+        <div class="val" id="bar-purchase">--</div>
+        <div class="lbl">購入金額(円)</div>
+      </div>
+      <div class="stat-box">
+        <div class="val" id="bar-uses">--</div>
+        <div class="lbl">使用回数</div>
+      </div>
+      <div class="stat-box">
+        <div class="val" id="bar-per-use" style="color:#2563eb">--</div>
+        <div class="lbl">1回あたり(円)</div>
+      </div>
+    </div>
+    <button class="use-btn" onclick="useBarikan()">✂️ 使用した！ ＋1回</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">床屋との比較</div>
+    <div class="setting-row">
+      <span class="setting-label">床屋・美容院の料金 (円)</span>
+      <input type="number" class="setting-input" id="barber-price" placeholder="1500" inputmode="numeric" onchange="saveBarikanSettings()">
+    </div>
+    <div class="summary-compare win" id="barikan-compare" style="margin-top:10px">金額を入力してください</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">設定</div>
+    <div class="setting-row">
+      <span class="setting-label">購入金額 (円)</span>
+      <input type="number" class="setting-input" id="bar-purchase-input" inputmode="numeric" onchange="saveBarikanSettings()">
+    </div>
+    <div style="margin-top:8px">
+      <button class="btn btn-danger" onclick="resetBarikan()">使用回数をリセット</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== データ管理 ==========
+const DEFAULT_DATA = {
+  tansan: {
+    machine_price: 23480,
+    include_machine: true,
+    bottle_price: 90,
+    cartridges: [
+      { id: 1, price: 3027, liters: 65 },
+      { id: 2, price: 3364, liters: 65 },
+      { id: 3, price: 3364, liters: 63.15 },
+      { id: 4, price: 3364, liters: 67.6 },
+      { id: 5, price: 3364, liters: 64.25 },
+      { id: 6, price: 3364, liters: 63.9 },
+      { id: 7, price: 3364, liters: 61.15 },
+      { id: 8, price: 3364, liters: 60.8 },
+      { id: 9, price: 3364, liters: 61.2 },
+      { id: 10, price: 3980, liters: 59.6 },
+      { id: 11, price: 3781, liters: 54.95 },
+      { id: 12, price: 3980, liters: 44 },
+      { id: 13, price: 3781, liters: 44 },
+      { id: 14, price: 3781, liters: 37.55 },
+      { id: 15, price: 3980, liters: null, uses: 24 }
+    ]
+  },
+  barikan: {
+    purchase_price: 4690,
+    uses: 206,
+    barber_price: 1500
+  }
+};
+
+function loadData() {
+  const saved = localStorage.getItem('tansan-app-data');
+  if (saved) {
+    try { return JSON.parse(saved); } catch(e) {}
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function saveData(data) {
+  localStorage.setItem('tansan-app-data', JSON.stringify(data));
+}
+
+let appData = loadData();
+
+// ========== タブ切替 ==========
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ========== 炭酸水 計算 ==========
+function getCurrentCartridge() {
+  const carts = appData.tansan.cartridges;
+  return carts.find(c => c.liters === null) || null;
+}
+
+function getTotalCost() {
+  let total = 0;
+  if (appData.tansan.include_machine) total += appData.tansan.machine_price;
+  for (const c of appData.tansan.cartridges) {
+    total += c.price;
+  }
+  return total;
+}
+
+function getTotalLiters() {
+  let total = 0;
+  for (const c of appData.tansan.cartridges) {
+    if (c.liters !== null && c.liters !== undefined) {
+      total += c.liters;
+    } else if (c.uses !== undefined) {
+      total += c.uses * 0.45;
+    }
+  }
+  return total;
+}
+
+function renderTansan() {
+  const t = appData.tansan;
+  const totalCost = getTotalCost();
+  const totalLiters = getTotalLiters();
+  const costPerLiter = totalLiters > 0 ? totalCost / totalLiters : 0;
+  const bottlePer1L = (t.bottle_price / 500) * 1000;
+
+  // サマリー
+  document.getElementById('cost-per-liter').textContent = costPerLiter.toFixed(1);
+  const compareBox = document.getElementById('compare-box');
+  const diff = bottlePer1L - costPerLiter;
+  if (diff > 0) {
+    compareBox.className = 'summary-compare win';
+    compareBox.textContent = `✅ ペットボトルより ${diff.toFixed(1)}円/L お得！`;
+  } else {
+    compareBox.className = 'summary-compare lose';
+    compareBox.textContent = `❌ ペットボトルより ${Math.abs(diff).toFixed(1)}円/L 割高`;
+  }
+  document.getElementById('summary-sub').textContent =
+    `累計: ${totalCost.toLocaleString()}円 ÷ ${totalLiters.toFixed(1)}L　|　ペットボトル: ${bottlePer1L}円/L`;
+
+  // 現在のカートリッジ
+  const current = getCurrentCartridge();
+  if (current) {
+    const uses = current.uses || 0;
+    const liters = (uses * 0.45).toFixed(2);
+    document.getElementById('current-label').textContent = `第 ${current.id} 本目`;
+    document.getElementById('uses-display').textContent = uses;
+    document.getElementById('current-liters').textContent = `${liters} L`;
+  }
+
+  // 履歴テーブル
+  const tbody = document.getElementById('history-body');
+  tbody.innerHTML = '';
+  for (const c of [...t.cartridges].reverse()) {
+    const isCurrent = c.liters === null;
+    const liters = isCurrent ? ((c.uses || 0) * 0.45).toFixed(2) : c.liters;
+    const cpl = liters > 0 ? (c.price / liters).toFixed(1) : '--';
+    const tr = document.createElement('tr');
+    if (isCurrent) tr.className = 'current-row';
+    tr.innerHTML = `
+      <td>${c.id}${isCurrent ? ' 📍' : ''}</td>
+      <td>${c.price.toLocaleString()}円</td>
+      <td>${liters}L${isCurrent ? `<br><small style="color:#94a3b8">${c.uses||0}回</small>` : ''}</td>
+      <td>${cpl}</td>
+      <td><button class="del-btn" onclick="deleteCartridge(${c.id})">🗑</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // 設定フォーム反映
+  document.getElementById('machine-price').value = t.machine_price;
+  document.getElementById('include-machine').checked = t.include_machine;
+  document.getElementById('bottle-price').value = t.bottle_price;
+}
+
+// ========== 炭酸水 操作 ==========
+function changeUses(delta) {
+  const current = getCurrentCartridge();
+  if (!current) return;
+  current.uses = Math.max(0, (current.uses || 0) + delta);
+  saveData(appData);
+  renderTansan();
+}
+
+function completeCartridge() {
+  const current = getCurrentCartridge();
+  if (!current) { alert('使用中のカートリッジがありません'); return; }
+  const uses = current.uses || 0;
+  if (uses === 0) { alert('使用回数が0です'); return; }
+  current.liters = parseFloat((uses * 0.45).toFixed(2));
+  delete current.uses;
+  saveData(appData);
+  renderTansan();
+}
+
+function addCartridge() {
+  const price = parseInt(document.getElementById('new-price').value);
+  if (!price || price <= 0) { alert('金額を入力してください'); return; }
+  if (getCurrentCartridge()) {
+    if (!confirm('現在使用中のカートリッジがあります。完了にしてから追加しますか？')) return;
+    completeCartridge();
+  }
+  const ids = appData.tansan.cartridges.map(c => c.id);
+  const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+  appData.tansan.cartridges.push({ id: newId, price, liters: null, uses: 0 });
+  document.getElementById('new-price').value = '';
+  saveData(appData);
+  renderTansan();
+}
+
+function deleteCartridge(id) {
+  if (!confirm(`カートリッジ #${id} を削除しますか？`)) return;
+  appData.tansan.cartridges = appData.tansan.cartridges.filter(c => c.id !== id);
+  saveData(appData);
+  renderTansan();
+}
+
+function saveMachinePrice() {
+  const val = parseInt(document.getElementById('machine-price').value);
+  if (!isNaN(val)) appData.tansan.machine_price = val;
+  saveData(appData);
+  renderTansan();
+}
+
+function saveSettings() {
+  const val = parseInt(document.getElementById('bottle-price').value);
+  if (!isNaN(val)) appData.tansan.bottle_price = val;
+  appData.tansan.include_machine = document.getElementById('include-machine').checked;
+  saveData(appData);
+  renderTansan();
+}
+
+// ========== バリカン ==========
+function renderBarikan() {
+  const b = appData.barikan;
+  const perUse = b.uses > 0 ? (b.purchase_price / b.uses).toFixed(1) : '--';
+  document.getElementById('bar-purchase').textContent = b.purchase_price.toLocaleString();
+  document.getElementById('bar-uses').textContent = b.uses;
+  document.getElementById('bar-per-use').textContent = perUse;
+  document.getElementById('bar-purchase-input').value = b.purchase_price;
+  document.getElementById('barber-price').value = b.barber_price || '';
+
+  const cmp = document.getElementById('barikan-compare');
+  if (b.barber_price && b.uses > 0) {
+    const saved = (b.barber_price - parseFloat(perUse)).toFixed(0);
+    const totalSaved = ((b.barber_price - parseFloat(perUse)) * b.uses).toFixed(0);
+    if (saved > 0) {
+      cmp.className = 'summary-compare win';
+      cmp.textContent = `✅ 1回あたり ${saved}円 節約！（累計 ${parseInt(totalSaved).toLocaleString()}円 節約）`;
+    } else {
+      cmp.className = 'summary-compare lose';
+      cmp.textContent = `❌ 床屋より ${Math.abs(saved)}円/回 割高`;
+    }
+  }
+}
+
+function useBarikan() {
+  appData.barikan.uses += 1;
+  saveData(appData);
+  renderBarikan();
+  // 軽いフィードバック
+  const btn = document.querySelector('.use-btn');
+  btn.textContent = '✅ 記録しました！';
+  setTimeout(() => { btn.textContent = '✂️ 使用した！ ＋1回'; }, 1000);
+}
+
+function resetBarikan() {
+  if (!confirm('使用回数を0にリセットしますか？')) return;
+  appData.barikan.uses = 0;
+  saveData(appData);
+  renderBarikan();
+}
+
+function saveBarikanSettings() {
+  const price = parseInt(document.getElementById('bar-purchase-input').value);
+  const barber = parseInt(document.getElementById('barber-price').value);
+  if (!isNaN(price)) appData.barikan.purchase_price = price;
+  if (!isNaN(barber)) appData.barikan.barber_price = barber;
+  saveData(appData);
+  renderBarikan();
+}
+
+// ========== 初期化 ==========
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+renderTansan();
+renderBarikan();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "炭酸水＆バリカン管理",
+  "short_name": "コスト管理",
+  "description": "炭酸水とバリカンのコストを記録・比較するアプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
